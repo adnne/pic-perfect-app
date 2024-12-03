@@ -9,16 +9,20 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
+  Modal,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import {  MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { useActionSheet } from '@expo/react-native-action-sheet';
+import Button from '@/components/ui/Button';
+type ImageSourceType = 'library' | 'camera';
 
 const TrendyPromptImagePage = () => {
   const [prompt, setPrompt] = useState('');
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState('');
+  const [uploadImageModal, setUploadImageModal] = useState(false);
 
   const handleSubmit = () => {
     if (prompt.trim() === '' || !image) {
@@ -28,94 +32,27 @@ const TrendyPromptImagePage = () => {
     }
   };
 
-  const { showActionSheetWithOptions } = useActionSheet();
+  const ImageEventFunction = async (sourceType:ImageSourceType) => {
+    const { status } = sourceType === 'library' 
+      ? await ImagePicker.requestMediaLibraryPermissionsAsync()
+      : await ImagePicker.requestCameraPermissionsAsync();
 
-  const openActionSheet = () => {
-    console.log('openActionSheet');
-    
-    try {
-      showActionSheetWithOptions(
-        {
-          options: ['Camera', 'Gallery', 'Cancel'],
-          destructiveButtonIndex: 0,
-          cancelButtonIndex: 2,
-          icons: [
-            <MaterialCommunityIcons name="camera" size={20} />,
-            <MaterialCommunityIcons name="image-multiple" size={20} />,
-            <MaterialCommunityIcons name="chevron-left" size={20} />,
-          ],
-          title: 'Pick image',
-          useModal: true,
-          destructiveColor: 'black',
-        },
-        (i) => {
-          switch (i) {
-            case 0:
-              tackeImage();
-              break;
-            case 1:
-              pickImage();
-              break;
-  
-            default:
-              break;
-          }
-        },
-      );
-    } catch (error) {
-      console.log(error);
-      
-    }
-    
-    
-  };
-  const pickImage = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      // allowsEditing: true,
-      // aspect: [4, 4],
-      quality: 1,
-    });
-    if (!res.canceled) {
-      const result = res.assets[0];
-      if (result) {
-        if (result.uri) {
-          let imageManipResult = null;
-
-          if (result.height > 800) {
-            // Compressing the image
-            imageManipResult = await ImageManipulator.manipulateAsync(
-              result.uri,
-              [{ resize: { height: 800 } }],
-              { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
-            );
-          } else {
-            imageManipResult = await ImageManipulator.manipulateAsync(
-              result.uri,
-              [],
-              { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
-            );
-          }
-
-          console.log(imageManipResult.uri);
-        }
-      }
-    }
-  };
-
-  const tackeImage = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Sorry, we need camera permissions to make this work!');
+      if (sourceType === 'library') {
+        Alert.alert('Sorry, we need galery permissions to make this work!');
+      } else {
+        Alert.alert('Sorry, we need camera permissions to make this work!');
+      }
       return;
     }
-
-    const res = await ImagePicker.launchCameraAsync({
+    const mediaOptions ={
       mediaTypes: ['images'],
-      // allowsEditing: true,
-      // aspect: [4, 4],
       quality: 1,
-    });
+    } as ImagePicker.ImagePickerOptions
+
+    const res = sourceType === 'library'
+    ? await ImagePicker.launchImageLibraryAsync(mediaOptions)
+    : await ImagePicker.launchCameraAsync(mediaOptions);
 
     if (!res.canceled) {
       const result = res.assets[0];
@@ -138,13 +75,47 @@ const TrendyPromptImagePage = () => {
             );
           }
 
-          console.log(imageManipResult.uri);
+          setImage(imageManipResult.uri);
+
         }
       }
     }
-  };
+    setUploadImageModal(false)
+  }
+
+
   return (
+    <> 
+      <Modal
+        visible={uploadImageModal}
+        animationType='slide'
+        transparent
+      >
+        <BlurView  tint='dark'  style={{ flex: 1} }>
+          <View style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'white',
+            position: 'absolute',
+            left: 10,
+            right: 10,
+            bottom: 20,
+            height: 200,
+            borderRadius: 20,
+            display: 'flex',
+            gap: 10,
+            paddingHorizontal: 20
+          }} >
+            <Button title='Photo libray' onPress={()=>ImageEventFunction('library')} />
+            <Button title='Camera' onPress={()=>ImageEventFunction('camera')} />
+            <Button title='Cancel' style={{ backgroundColor: '#f43f5e' }} textStyle={{ color: 'white' }} onPress={() => setUploadImageModal(false)} />
+          </View>
+        </BlurView>
+       
+      </Modal>
     <SafeAreaView style={styles.container}>
+ 
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={['#1a1a2e', '#16213e']}
@@ -163,7 +134,7 @@ const TrendyPromptImagePage = () => {
           />
         </View>
         
-        <TouchableOpacity style={styles.imageUploadButton} onPress={openActionSheet}>
+        <TouchableOpacity style={styles.imageUploadButton} onPress={()=>setUploadImageModal(true)}>
           <Text style={styles.buttonText}>Upload Image</Text>
         </TouchableOpacity>
         
@@ -186,6 +157,8 @@ const TrendyPromptImagePage = () => {
         </TouchableOpacity>
       </LinearGradient>
     </SafeAreaView>
+    </>
+   
   );
 };
 
