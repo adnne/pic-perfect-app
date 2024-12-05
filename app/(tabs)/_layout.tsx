@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Home, Sparkles } from 'lucide-react-native';
 
 
 export default function TabLayout() {
@@ -8,43 +9,43 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          height: 70, 
+          paddingBottom: 10,
+          paddingTop: 10,
+        },
+        tabBarActiveTintColor:'#52B788'
+
       }}
+      
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🏠</Text>,
+          tabBarIcon: ({ color }) =>(
+            <Home
+              size={35}
+              color={color}
+              strokeWidth={2}
+            />
+          ),
         }}
       />
+
       <Tabs.Screen
-        name="documents"
+        name="generate"
         options={{
-          title: 'Documents',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>📄</Text>,
+          title: 'Generate',
+          tabBarIcon: ({ color }) =>(
+            <Sparkles 
+            size={35}
+              color={color}
+              strokeWidth={2} />
+          ),
         }}
       />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>🔍</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="share"
-        options={{
-          title: 'Share',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>↗️</Text>,
-        }}
-      />
-      <Tabs.Screen
-        name="add"
-        options={{
-          title: 'Add',
-          tabBarIcon: ({ color }) => <Text style={[styles.tabIcon, { color }]}>➕</Text>,
-        }}
-      />
+
     </Tabs>
   );
 }

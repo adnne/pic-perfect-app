@@ -1,152 +1,95 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   Image,
-  TextInput,
   StatusBar,
-  StyleSheet
+  StyleSheet,
+  FlatList
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { generatedImagesService } from '@/services/generated_images/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function HomeScreen() {
+  const [imagesList, setImagesList] = useState<API.GenratedImage[]>([]);
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+      generatedImagesService.list().then((response) => {
+        setImagesList(response.data.results);
+      }).catch((error) => {
+        console.log(error);
+      });
+    }, [])
+  );
+  const renderImageItem = ({ item }: { item: API.GenratedImage }) => (
+    <View style={styles.imageItem}>
+      <Image source={{ uri: item.image }} style={styles.generatedImage} />
+      {/* <Text style={styles.imagePrompt} numberOfLines={2}>{item.prompt}</Text> */}
+    </View>
+  );
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
- <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      <ScrollView style={styles.scrollView}>
+      <LinearGradient
+        colors={['#1a1a2e', '#16213e']}
+        style={{ flex: 1 ,}}
+      >
+        <View style={styles.container}>
+          <StatusBar barStyle="default" />
+          
+          <ScrollView style={styles.scrollView}>
+            {/* <View style={styles.cardsContainer}>
+              <LinearGradient
+                colors={['#8A2BE2', '#FF69B4']}
+                style={styles.card}
+              >
+                <View style={styles.cardIcon}>
+                  <Text style={styles.cardIconText}>💬</Text>
+                </View>
+                <Text style={styles.cardText}>Chat with the smartest AI</Text>
+              </LinearGradient>
 
-        {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
-          <TouchableOpacity style={styles.activeTab}>
-            <Text style={styles.activeTabText}>All types</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Text style={styles.tabText}>Images</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Text style={styles.tabText}>Videos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Text style={styles.tabText}>Content</Text>
-          </TouchableOpacity>
-        </ScrollView>
+              <LinearGradient
+                colors={['#00FA9A', '#00CED1']}
+                style={styles.card}
+              >
+                <View style={styles.cardIcon}>
+                  <Text style={styles.cardIconText}>{'</>'}</Text>
+                </View>
+                <Text style={styles.cardText}>HTML welcome from</Text>
+              </LinearGradient>
+            </View> */}
 
-        {/* Feature Cards */}
-        <View style={styles.cardsContainer}>
-          <LinearGradient
-            colors={['#8A2BE2', '#FF69B4']}
-            style={styles.card}
-          >
-            <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>💬</Text>
+            <View style={styles.generatedImagesContainer}>
+              <Text style={styles.sectionTitle}>Generated Images</Text>
+              <FlatList
+                data={imagesList}
+                renderItem={renderImageItem}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={2}
+                showsHorizontalScrollIndicator={false}
+              />
             </View>
-            <Text style={styles.cardText}>Chat with the smartest AI</Text>
-          </LinearGradient>
-
-          <LinearGradient
-            colors={['#00FA9A', '#00CED1']}
-            style={styles.card}
-          >
-            <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>{'</>'}</Text>
-            </View>
-            <Text style={styles.cardText}>HTML welcome from</Text>
-          </LinearGradient>
+          </ScrollView>
         </View>
-
-        {/* Favorites Section */}
-        <View style={styles.favoritesContainer}>
-          <View style={styles.favoritesHeader}>
-            <Text style={styles.favoritesTitle}>Favorites</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.favoriteItem}>
-            <Image
-              source={{ uri: 'https://via.placeholder.com/50' }}
-              style={styles.favoriteItemImage}
-            />
-            <View style={styles.favoriteItemContent}>
-              <Text style={styles.favoriteItemTitle}>Education feedback</Text>
-              <Text style={styles.favoriteItemTime}>1m ago</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
-
+      </LinearGradient>
     </SafeAreaView>
-   
   );
 }
 
-const styles =  StyleSheet.create( {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F0FF',
-    paddingTop:20
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-  },
-  menuIcon: {
-    fontSize: 24,
-    color: '#4A0E4E',
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    paddingTop: 20
   },
   scrollView: {
     flex: 1,
-  },
-  greeting: {
-    padding: 16,
-  },
-  greetingText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4A0E4E',
-  },
-  greetingName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4A0E4E',
-  },
-  tabsContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  tab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-  },
-  activeTab: {
-    backgroundColor: '#4A0E4E',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-  },
-  tabText: {
-    color: '#4A0E4E',
-  },
-  activeTabText: {
-    color: 'white',
   },
   cardsContainer: {
     flexDirection: 'row',
@@ -177,61 +120,28 @@ const styles =  StyleSheet.create( {
     color: 'white',
     fontWeight: 'bold',
   },
-  favoritesContainer: {
+  generatedImagesContainer: {
     padding: 16,
   },
-  favoritesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  favoritesTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4A0E4E',
-  },
-  seeAllText: {
-    color: '#007AFF',
-  },
-  favoriteItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-  },
-  favoriteItemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 12,
-  },
-  favoriteItemContent: {
-    flex: 1,
-  },
-  favoriteItemTitle: {
-    fontWeight: 'bold',
-    color: '#4A0E4E',
-  },
-  favoriteItemTime: {
-    color: '#8E8E93',
-    fontSize: 12,
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#4A0E4E',
-    borderRadius: 30,
-    margin: 16,
-    padding: 12,
-  },
-  navItem: {
-    alignItems: 'center',
-  },
-  navIcon: {
-    fontSize: 24,
     color: 'white',
+    marginBottom: 12,
   },
-})
+  imageItem: {
+    marginRight: 12,
+    width: "48.5%",
+  },
+  generatedImage: {
+    flex: 1,
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  imagePrompt: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 4,
+  },
+});
