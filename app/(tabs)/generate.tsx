@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   TextInput,
@@ -11,6 +11,9 @@ import {
   StatusBar,
   Modal,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import { BlurView } from 'expo-blur';
@@ -19,39 +22,47 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import Button from '@/components/ui/Button';
 import { generatedImagesService } from '@/services/generated_images/api';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { Formik, FormikProps } from 'formik';
+import {Picker} from '@react-native-picker/picker';
 
 type ImageSourceType = 'library' | 'camera';
-
+type generatForm = {
+  prompt: string;
+  input_image: string;
+  gender: string;
+}
 const TrendyPromptImagePage = () => {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, ] = useState('');
   const [input_image, setinput_image] = useState('');
+  const [generated_image, setgenerated_image] = useState('');
   const [gender, setGender] = useState('');
   const [uploadImageModal, setUploadImageModal] = useState(false);
+  const formikRef = useRef<FormikProps<generatForm>>(null);
 
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const submitForm = (values: generatForm) => {
 
-    const msg = gender + ' img ' + prompt;
+    const msg = gender + ' img ' + values.prompt;
     const formData: API.GenratedImageForm = {
       input_image,
       prompt: msg,
     };
-
     setLoading(true);
-
-  
     generatedImagesService.post(formData)
       .then((response) => {
-        console.log(response);
+        console.log(response.data);
+        
+        setgenerated_image(response.data.image_url);
         setLoading(false);
-        router.push('/');
       })
       .catch((error) => {
         console.error('Error submitting data:', error);
         Alert.alert('Error', 'Failed to submit data. Please try again.');
-      });
+      }).finally(() => {
+        setLoading(false);
+      })
     
 
   };
@@ -60,7 +71,8 @@ const TrendyPromptImagePage = () => {
     const { status } = sourceType === 'library' 
       ? await ImagePicker.requestMediaLibraryPermissionsAsync()
       : await ImagePicker.requestCameraPermissionsAsync();
-
+    console.log(status);
+    
     if (status !== 'granted') {
       Alert.alert('Permission denied', sourceType === 'library' 
         ? 'Sorry, we need gallery permissions to make this work!'
@@ -102,6 +114,12 @@ const TrendyPromptImagePage = () => {
     }
     setUploadImageModal(false);
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      formikRef.current?.resetForm();
+    }, [])
+  );
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' ,    backgroundColor: '#1a1a2e',
@@ -133,38 +151,56 @@ const TrendyPromptImagePage = () => {
           </View>
         </BlurView>
       </Modal>
-
-      <SafeAreaView  style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient
+      <LinearGradient
           colors={['#1a1a2e', '#16213e']}
           style={styles.gradient}
         >
+      <ScrollView  style={styles.container} >
+        <StatusBar barStyle="light-content" />
+       
           <Text style={styles.title}>AI Photo Generatore</Text>
-          
-          <View style={styles.inputContainer}>
+         
+          <Formik
+          innerRef={formikRef}
+          initialValues={{
+            prompt: '',
+            input_image: '',
+            gender: '',
+          }}
+          onSubmit={(values) => submitForm(values)} 
+          validate={(values) => {
+            const errors: any = {};
+            if (!values.prompt && !input_image) {
+              errors.prompt = 'Both a prompt and an image must be provided';
+            } else if (!values.prompt) {
+              errors.prompt = 'Please provide a prompt';
+            } else if (!input_image) {
+              errors.prompt = 'Please provide an image';
+            }
+            
+            return errors;
+          }}
+          >
+          {({ handleChange, handleBlur, handleSubmit, values, errors }) => (
+            <View >
+      <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Enter your prompt here"
               placeholderTextColor="#a0a0a0"
-              value={prompt}
-              onChangeText={setPrompt}
-              multiline
-              enterKeyHint='done'
+              onChangeText={handleChange('prompt')}
+              onBlur={handleBlur('prompt')}
+              value={values.prompt}
             />
           </View>
+            {errors.prompt && <Text style={styles.error}>{errors.prompt}</Text>}
           <View style={styles.pickerContainer}>
-            <RNPickerSelect
-                  onValueChange={(value) => setGender(value)}
-                  items={[
-                    { label: 'Men', value: 'men' },
-                    { label: 'Women', value: 'women' },
-                  ]}
-                  placeholder={ {
-                    label: 'Select Gender',
-                    value: null,
-                  }}
-                />
+                <Picker
+                  selectedValue={values.gender}
+                  onValueChange={handleChange('gender')}>
+                <Picker.Item label="Men" value="men" />
+                <Picker.Item label="Women" value="women" />
+              </Picker>
           </View>
           
           <TouchableOpacity style={styles.imageUploadButton} onPress={() => setUploadImageModal(true)}>
@@ -180,7 +216,7 @@ const TrendyPromptImagePage = () => {
 
     
           
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <TouchableOpacity style={styles.submitButton} onPress={()=>handleSubmit()}>
             <LinearGradient
               colors={['#0f3443', '#34e89e']}
               start={{x: 0, y: 0}}
@@ -188,10 +224,22 @@ const TrendyPromptImagePage = () => {
               style={styles.submitGradient}
             >
               <Text style={styles.submitButtonText}>Generate</Text>
+              
             </LinearGradient>
+            
           </TouchableOpacity>
+          {generated_image && (
+            <Image
+              source={{ uri: generated_image }}
+              style={styles.imagePreview}
+            />
+          )}
+            </View>
+          )}
+          
+          </Formik>
+      </ScrollView>
         </LinearGradient>
-      </SafeAreaView>
     </>
   );
 };
@@ -289,6 +337,10 @@ const styles = StyleSheet.create({
   picker: {
     color: '#fff',
     height: 50,
+  },
+  error: {
+    color: 'red',
+    marginBottom: 10,
   },
 });
 

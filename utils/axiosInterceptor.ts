@@ -3,7 +3,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const axiosInterceptor = axios.create({
-  baseURL: 'http://d29c-154-147-113-237.ngrok-free.app/api',
+  baseURL: 'http://bfb7-160-165-29-207.ngrok-free.app/api',
 });
 
 axiosInterceptor.interceptors.request.use(

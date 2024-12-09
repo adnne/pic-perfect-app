@@ -6,8 +6,15 @@ declare namespace API {
     "user": number,
     "input_image": string,
     "prompt": string,
-    "status": string,
+    "status": ImageStatus,
     "image": string
+  }
+
+  interface GenratedImageResponse {
+    "status": ImageStatus,
+    "message": string ,
+    "photo_id": number,
+    "image_url": string
   }
 
   type GenratedImageForm = Omit<GenratedImage, "id" | "user"|"status"| "image">;
